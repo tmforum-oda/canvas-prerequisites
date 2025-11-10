@@ -1,0 +1,40 @@
+{
+    "enabled": true,
+    "realm": "odari",
+    "clients": [
+    {
+        "clientId": "canvassystem",
+        "name": "Canvas System",
+        "enabled": true,
+        "standardFlowEnabled": false,
+        "serviceAccountsEnabled": true
+    },
+    {
+        "clientId": "credentialsmanagement-operator",
+        "name": "Credentials Management Operator",
+        "enabled": true,
+        "standardFlowEnabled": false,
+        "serviceAccountsEnabled": true
+    }
+    ],
+    "users": [
+    {
+    "username": "service-account-canvassystem",
+    "enabled": true,
+    "clientRoles": {
+        "realm-management": [
+        "manage-clients"
+        ]
+        }
+    },
+    {
+    "username": "service-account-credentialsmanagement-operator",
+    "enabled": true,
+    "clientRoles": {
+        "realm-management": [
+        "view-clients"
+        ]
+        }
+    }
+    ]
+}

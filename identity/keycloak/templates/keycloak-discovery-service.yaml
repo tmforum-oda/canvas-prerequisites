@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-discovery
+  labels:
+    {{- include "keycloak-helm.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "keycloak-helm.selectorLabels" . | nindent 4 }}
+  clusterIP: None
+  type: ClusterIP
+  ports:
+    - name: jgroups
+      port: 7800
+      targetPort: 7800

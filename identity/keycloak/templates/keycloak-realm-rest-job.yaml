@@ -1,0 +1,49 @@
+{{- if .Values.keycloak.importJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-realm-rest-import
+  labels:
+    {{- include "keycloak-helm.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "keycloak-helm.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: import-realm
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              # Wait for Keycloak to be ready on health port
+              until wget -qO- http://keycloak:{{ .Values.keycloak.service.healthPort }}/health/ready; do
+                echo "Waiting for Keycloak...";
+                sleep 5;
+              done
+
+              # Get admin token (extract access_token from JSON using sed/awk)
+              RESPONSE=$(wget -qO- --post-data="client_id=admin-cli&username={{ .Values.keycloak.adminUser }}&password={{ .Values.keycloak.adminPassword }}&grant_type=password" \
+                http://keycloak:{{ .Values.keycloak.service.port }}/realms/master/protocol/openid-connect/token)
+              TOKEN=$(echo "$RESPONSE" | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
+
+              # Import realm via REST API
+              wget \
+                --header="Authorization: Bearer $TOKEN" \
+                --header="Content-Type: application/json" \
+                --post-data="$(cat /realm/realm.json)" \
+                http://keycloak:{{ .Values.keycloak.service.port }}/admin/realms -O -
+          volumeMounts:
+            - name: realm-config
+              mountPath: /realm
+      restartPolicy: OnFailure
+      volumes:
+        - name: realm-config
+          configMap:
+            name: keycloak-realm
+{{- end }}

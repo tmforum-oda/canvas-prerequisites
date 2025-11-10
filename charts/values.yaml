@@ -1,0 +1,3 @@
+keycloak:
+  enabled: true
+  # Add Keycloak-specific values here
