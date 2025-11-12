@@ -25,7 +25,7 @@ The ODA Canvas implements a modular architecture with independent operators:
 ## Project Structure
 
 - **charts/**: Helm chart-of-charts for deploying Canvas prerequisites.
-- **identity/**: Dependent chart for identity management installation.
+- **identity/**: Dependent charts for identity management installation.
 - **LICENSE**: Apache 2.0 license file.
 - **.gitignore**: Git ignore file.
 
