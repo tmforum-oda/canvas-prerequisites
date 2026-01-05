@@ -1,9 +1,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: keycloak-config-cli
+  name: {{ include "keycloak.fullname" . }}-config-cli
   labels:
-    {{- include "keycloak-helm.labels" . | nindent 4 }}
+    {{- include "keycloak.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": post-install
     "helm.sh/hook-delete-policy": hook-succeeded
@@ -11,23 +11,23 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "keycloak-helm.labels" . | nindent 8 }}
+        {{- include "keycloak.labels" . | nindent 8 }}
     spec:
       containers:
-        - name: keycloak-config-cli
+        - name: {{ include "keycloak.fullname" . }}-config-cli
           image: "{{ .Values.keycloak.configCli.image.repository }}:{{ .Values.keycloak.configCli.image.tag }}"
           env:
             - name: KEYCLOAK_URL
-              value: "http://keycloak:{{ .Values.keycloak.service.port }}"
+              value: "http://{{ include "keycloak.fullname" . }}:{{ .Values.keycloak.service.port }}"
             - name: KEYCLOAK_USER
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-credentials
+                  name: {{ .Release.Name }}-credentials
                   key: keycloak-admin-user
             - name: KEYCLOAK_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-credentials
+                  name: {{ .Release.Name }}-credentials
                   key: keycloak-admin-password
             - name: JAVA_OPTS
               value: ""
@@ -39,7 +39,7 @@ spec:
             - sh
             - -c
             - |
-              until wget -qO- http://keycloak:{{ .Values.keycloak.service.healthPort }}/health/ready; do
+              until wget -qO- http://{{ include "keycloak.fullname" . }}:{{ .Values.keycloak.service.healthPort }}/health/ready; do
                 echo "Waiting for Keycloak to be healthy...";
                 sleep 5;
               done
@@ -51,4 +51,4 @@ spec:
       volumes:
         - name: realm-config
           configMap:
-            name: keycloak-realm
+            name: {{ include "keycloak.fullname" . }}-realm

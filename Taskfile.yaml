@@ -1,27 +1,12 @@
 version: '3'
-
-vars:
-  HELM_OS: linux
-  HELM_ARCH: amd64
-  HELM_VERSION: v3.19.0
-
 tasks:
-  clone-repo:
-    desc: Clone the canvas-prerequisites repository
+  test:
+    desc: Run BDD tests
     cmds:
-      - echo "Please clone the repository manually: git clone <repo-url>"
-
-  install-helm:
-    desc: Install Helm (assumes you have admin rights to run `install`)
-    cmds:
-      - curl -LO https://get.helm.sh/helm-${HELM_VERSION}-${HELM_OS}-${HELM_ARCH}.tar.gz
-      - tar -zxvf helm-${HELM_VERSION}-${HELM_OS}-${HELM_ARCH}.tar.gz
-      - sudo install ${HELM_OS}-${HELM_ARCH}/helm /usr/local/bin/
-      - rm -rf ${HELM_OS}-${HELM_ARCH} helm-${HELM_VERSION}-${HELM_OS}-${HELM_ARCH}.tar.gz
+      - cd tests && npm install && npm test
 
   add-istio-repo:
     desc: Add the Istio Helm repository
-    deps: [install-helm]
     cmds:
       - helm repo add istio https://istio-release.storage.googleapis.com/charts
       - helm repo update
@@ -30,19 +15,21 @@ tasks:
     desc: Install Istio base and control plane
     deps: [add-istio-repo]
     cmds:
-      - helm install istio-base istio/base
-      - helm install istiod istio/istiod
+      - kubectl create namespace istio-system || true
+      - helm install istio-base istio/base -n istio-system --wait
+      - helm install istiod istio/istiod -n istio-system --wait
 
   install-prerequisites-chart:
     desc: Install the canvas-prerequisites chart-of-charts
     deps: [install-istio]
     cmds:
+      - cd charts
+      - helm dependency build ./charts
       - helm install prerequisites ./charts
 
   install-all:
     desc: Install all prerequisites for ODA Canvas
     cmds:
-      - task: install-helm
       - task: install-istio
       - task: install-prerequisites-chart
       - echo "All prerequisites installed."

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: keycloak-discovery
+  name: {{ include "keycloak.fullname" . }}-discovery
   labels:
-    {{- include "keycloak-helm.labels" . | nindent 4 }}
+    {{- include "keycloak.labels" . | nindent 4 }}
 spec:
   selector:
-    {{- include "keycloak-helm.selectorLabels" . | nindent 4 }}
+    {{- include "keycloak.selectorLabels" . | nindent 4 }}
   clusterIP: None
   type: ClusterIP
   ports:

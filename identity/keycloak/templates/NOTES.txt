@@ -4,7 +4,7 @@ Release name: {{ .Release.Name }}
 
 To access the Keycloak UI, get the service URL:
 
-  kubectl get svc {{ include "keycloak-helm.fullname" . }}
+  kubectl get svc {{ include "keycloak.fullname" . }}
 
 Default admin credentials:
   Username: {{ .Values.keycloak.adminUser }}

@@ -1,11 +1,11 @@
-{{- define "keycloak-helm.labels" -}}
+{{- define "keycloak.labels" -}}
 app: {{ .Chart.Name }}
 {{- end }}
 
-{{- define "keycloak-helm.selectorLabels" -}}
+{{- define "keycloak.selectorLabels" -}}
 app: {{ .Chart.Name }}
 {{- end }}
 
-{{- define "keycloak-helm.fullname" -}}
+{{- define "keycloak.fullname" -}}
 {{ .Release.Name }}-{{ .Chart.Name }}
 {{- end }}

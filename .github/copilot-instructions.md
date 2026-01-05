@@ -26,6 +26,8 @@ The ODA Canvas implements a modular architecture with independent operators:
 
 - **charts/**: Helm chart-of-charts for deploying Canvas prerequisites.
 - **identity/**: Dependent charts for identity management installation.
+- **tests/**: Contains BDD tests using Cucumber.
+- **Taskfile.yaml**: Automation steps for installing prerequisites.
 - **LICENSE**: Apache 2.0 license file.
 - **.gitignore**: Git ignore file.
 
@@ -38,3 +40,54 @@ The ODA Canvas implements a modular architecture with independent operators:
 - When adding new prerequisites, create a new dependent chart in a category-based folder. If unsure about the folder, ask.
 - Use values files to parameterise deployments.
 - Values should only be exposed in the chart-of-charts if we expect customisation of the installation (for example enabling/disabling dependencies or changing passwords in dependencies).
+
+## Developer Workflows
+
+### Setting Up the Environment
+
+1. Ensure you have the following tools installed:
+   - [Helm](https://helm.sh/)
+   - [kubectl](https://kubernetes.io/docs/tasks/tools/)
+2. Access a running Kubernetes cluster.
+
+### Deploying the Prerequisites
+
+1. Clone this repository.
+2. Install Istio:
+   ```sh
+   helm repo add istio https://istio-release.storage.googleapis.com/charts
+   helm repo update
+   helm install istio-base istio/base
+   helm install istiod istio/istiod
+   ```
+   Refer to the Istio documentation for further configuration.
+3. Customize `charts/values.yaml` as needed.
+4. Deploy the chart-of-charts:
+   ```sh
+   helm install prerequisites ./charts
+   ```
+
+### Using Taskfile for Automation
+
+- The `Taskfile.yaml` includes predefined automation steps. For example, to install prerequisites, run:
+  ```sh
+  task install
+  ```
+
+## Testing and Debugging
+
+- Tests are located in the `tests/` directory and use BDD with Cucumber.
+- To run tests, ensure Node.js is installed and execute:
+  ```sh
+  npm install
+  npm test
+  ```
+
+## Integration Points
+
+- **Istio**: Provides service mesh capabilities. Ensure it is installed and configured before deploying the chart-of-charts.
+- **Keycloak**: A dependent chart for identity management. Customize its `values.yaml` in `identity/keycloak/` for specific configurations.
+
+## Configuration Values
+
+Refer to the `charts/values.yaml` file for global configurations. For sub-chart-specific values, see the `values.yaml` in the respective directories (e.g., `identity/keycloak/values.yaml`).

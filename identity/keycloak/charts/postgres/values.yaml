@@ -1,3 +1,5 @@
+# Secret name for Postgres credentials (should match the Keycloak secret name)
+# The credentials secret is always named {{ .Release.Name }}-credentials
 image:
   repository: mirror.gcr.io/postgres
   tag: "17"

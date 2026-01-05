@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: keycloak
+  name: {{ include "keycloak.fullname" . }}
   labels:
-    {{- include "keycloak-helm.labels" . | nindent 4 }}
+    {{- include "keycloak.labels" . | nindent 4 }}
 spec:
   serviceName: keycloak-discovery
   replicas: {{ .Values.keycloak.replicas }}
   selector:
     matchLabels:
-      {{- include "keycloak-helm.selectorLabels" . | nindent 6 }}
+      {{- include "keycloak.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "keycloak-helm.labels" . | nindent 8 }}
+        {{- include "keycloak.labels" . | nindent 8 }}
     spec:
       initContainers:
         - name: wait-for-postgres
@@ -22,7 +22,7 @@ spec:
             - sh
             - -c
             - >
-              until nc -z postgres {{ .Values.postgres.service.port }}; do echo "Waiting for postgres..."; sleep 2; done
+              until nc -z {{ .Release.Name }}-postgres {{ .Values.postgres.service.port }}; do echo "Waiting for postgres..."; sleep 2; done
       containers:
         - name: keycloak
           image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag }}"
@@ -31,12 +31,12 @@ spec:
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-credentials
+                  name: {{ .Release.Name }}-credentials
                   key: keycloak-admin-user
             - name: KC_BOOTSTRAP_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-credentials
+                  name: {{ .Release.Name }}-credentials
                   key: keycloak-admin-password
             # In a production environment, add a TLS certificate to Keycloak to either end-to-end encrypt the traffic between
             # the client or Keycloak, or to encrypt the traffic between your proxy and Keycloak.
@@ -67,19 +67,19 @@ spec:
             - name: 'KC_DB_URL_DATABASE'
               value: "{{ .Values.postgres.database }}"
             - name: 'KC_DB_URL_HOST'
-              value: "postgres"
+              value: "{{ .Release.Name }}-postgres"
             - name: 'KC_DB'
               value: "postgres"
             # In a production environment, use a secret to store username and password to the database
             - name: 'KC_DB_PASSWORD'
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-credentials
+                  name: {{ .Release.Name }}-credentials
                   key: postgres-password
             - name: 'KC_DB_USERNAME'
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-credentials
+                  name: {{ .Release.Name }}-credentials
                   key: postgres-user
           ports:
             - name: http
@@ -121,4 +121,4 @@ spec:
         # ...existing volumes...
         - name: realm-config
           configMap:
-            name: keycloak-realm
+            name: {{ include "keycloak.fullname" . }}-realm

@@ -1,3 +1,6 @@
+# This value is set by the parent chart to ensure the correct secret name is used by the Postgres subchart
+global:
+  keycloakSecretName: ""
 # Keycloak configuration
 keycloak:
   image:
@@ -37,3 +40,5 @@ postgres:
   database: keycloak
   service:
     port: 5432
+  # The credentials secret is always named {{ .Release.Name }}-credentials
+  # The secretName is set automatically by the parent chart. If you override release/chart names, ensure this matches.

@@ -2,9 +2,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: keycloak-realm-rest-import
+  name: {{ include "keycloak.fullname" . }}-realm-rest-import
   labels:
-    {{- include "keycloak-helm.labels" . | nindent 4 }}
+    {{- include "keycloak.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": post-install
     "helm.sh/hook-delete-policy": hook-succeeded
@@ -12,10 +12,10 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "keycloak-helm.labels" . | nindent 8 }}
+        {{- include "keycloak.labels" . | nindent 8 }}
     spec:
       containers:
-        - name: import-realm
+        - name: {{ include "keycloak.fullname" . }}-import-realm
           image: busybox
           command:
             - sh
@@ -45,5 +45,5 @@ spec:
       volumes:
         - name: realm-config
           configMap:
-            name: keycloak-realm
+                  name: {{ include "keycloak.fullname" . }}-realm
 {{- end }}
