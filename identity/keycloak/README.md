@@ -74,6 +74,68 @@ kubectl get secret keycloak-credentials -o jsonpath='{.data.postgres-password}' 
 - Username: `admin`
 - Password: See above for retrieval instructions.
 
+## Upgrade & Secret Preservation
+
+### How Secret Preservation Works
+
+The Keycloak admin password and Postgres password Secret is protected with the Helm annotation `helm.sh/resource-policy: keep`. This means:
+
+- **First install**: A Secret is created. If you did not specify passwords in values, random passwords are generated.
+- **Helm upgrades**: The existing Secret is **NOT overwritten**. Your current credentials are preserved, ensuring Keycloak continues to function without interruption.
+- **Manual changes**: If you manually modify or delete the Secret outside of Helm, subsequent Helm operations will not recreate it automatically.
+
+### Storing Initial Passwords Securely
+
+After the first install, the randomly generated passwords are embedded in the Secret. **Store them securely** before performing upgrades:
+
+```sh
+kubectl get secret <release-name>-credentials -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
+kubectl get secret <release-name>-credentials -o jsonpath='{.data.postgres-password}' | base64 --decode
+```
+
+It is recommended to save these values immediately after the first installation.
+
+### Rotating Passwords
+
+If you need to rotate passwords after deployment:
+
+1. Create a new Secret with updated credentials:
+   ```sh
+   kubectl create secret generic <release-name>-credentials-new \\
+     --from-literal=keycloak-admin-user=admin \\
+     --from-literal=keycloak-admin-password=<new-password> \\
+     --from-literal=postgres-user=keycloak \\
+     --from-literal=postgres-password=<new-postgres-password> \\
+     -o yaml | kubectl apply -f -
+   ```
+
+2. Update the StatefulSet to reference the new Secret (or manually restart Keycloak pods to pick up the updated Secret data).
+
+3. Delete the old Secret after verifying everything works:
+   ```sh
+   kubectl delete secret <release-name>-credentials
+   ```
+
+### Force-Regenerating the Secret
+
+If you need to regenerate the Secret from Helm (e.g., to reset to a random password), you must first remove the resource-policy protection:
+
+1. Remove the Helm annotation:
+   ```sh
+   kubectl annotate secret <release-name>-credentials helm.sh/resource-policy- --overwrite
+   ```
+
+2. Delete the Secret:
+   ```sh
+   kubectl delete secret <release-name>-credentials
+   ```
+
+3. Run Helm upgrade/install to recreate it:
+   ```sh
+   helm upgrade <release-name> ./keycloak --reuse-values
+   ```
+   This will create a new Secret with randomly generated passwords.
+
 ## Accessing the Keycloak UI
 
 Get the service URL:
