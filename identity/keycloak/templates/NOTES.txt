@@ -9,4 +9,4 @@ To access the Keycloak UI, get the service URL:
 Default admin credentials:
   Username: {{ .Values.keycloak.adminUser }}
   Password: Retrieve with:
-    kubectl get secret keycloak-credentials -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
+    kubectl get secret {{ .Release.Name }}-credentials -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
