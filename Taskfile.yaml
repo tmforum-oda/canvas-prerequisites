@@ -8,7 +8,7 @@ tasks:
   add-istio-repo:
     desc: Add the Istio Helm repository
     cmds:
-      - helm repo add istio https://istio-release.storage.googleapis.com/charts
+      - helm repo add istio https://blob.istio.io/istio-release/charts
       - helm repo update
 
   install-istio:
@@ -21,11 +21,19 @@ tasks:
 
   install-prerequisites-chart:
     desc: Install the canvas-prerequisites chart-of-charts
-    deps: [install-istio]
+    #deps: [install-istio]
     cmds:
       - cd charts
       - helm dependency build ./charts
       - helm install prerequisites ./charts
+
+  install-microk8s:
+    desc: Install microk8s and enable required modules
+    cmds:
+      - sudo snap install microk8s --classic
+      - sudo microk8s enable hostpath-storage
+      - sudo microk8s enable dns
+      - sudo microk8s enable metallb
 
   install-all:
     desc: Install all prerequisites for ODA Canvas

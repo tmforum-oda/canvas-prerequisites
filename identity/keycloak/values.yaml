@@ -5,7 +5,7 @@ global:
 keycloak:
   image:
     repository: quay.io/keycloak/keycloak  # Keycloak image repo
-    tag: 26.4.2                            # Keycloak image tag
+    tag: 26.8                              # Keycloak image tag
   replicas: 1                              # Number of Keycloak pods
   resources:                               # Pod resource requests/limits
     requests:
@@ -30,11 +30,11 @@ keycloak:
   configCli:
     image:
       repository: quay.io/adorsys/keycloak-config-cli
-      tag: 6.4.0-26
+      tag: 6.5.1-26
 postgres:
   image:
-    repository: mirror.gcr.io/postgres
-    tag: "17"
+    repository: docker.io/postgres
+    tag: "18"
   user: "keycloak"                              # DB username (default)
   password: ""                                  # DB password (set blank for generation)
   database: keycloak
