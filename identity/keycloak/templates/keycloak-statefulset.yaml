@@ -28,6 +28,10 @@ spec:
           image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag }}"
           args: ["start"]
           env:
+            - name: KC_FEATURE_TOKEN_EXCHANGE_DELEGATION
+              value: "{{ .Values.keycloak.feature.tokenExchangeDelegation }}"
+            - name: KC_FEATURE_PARAMETERIZED_SCOPES
+              value: "{{ .Values.keycloak.feature.parameterizedScopes }}"
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               valueFrom:
                 secretKeyRef:

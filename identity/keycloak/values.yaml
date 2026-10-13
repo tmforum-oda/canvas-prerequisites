@@ -27,6 +27,9 @@ keycloak:
   httpEnabled: true                        # Enable HTTP
   importJob:
     enabled: false
+  feature:
+    tokenExchangeDelegation: enabled          # Enable the token exchange delegation feature
+    parameterizedScopes: enabled              # Enable the parameterized scopes feature
   configCli:
     image:
       repository: quay.io/adorsys/keycloak-config-cli
