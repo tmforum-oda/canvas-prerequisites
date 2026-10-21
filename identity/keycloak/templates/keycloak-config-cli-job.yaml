@@ -1,6 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
+  namespace: {{ .Values.namespace }}
   name: {{ include "keycloak.fullname" . }}-config-cli
   labels:
     {{- include "keycloak.labels" . | nindent 4 }}

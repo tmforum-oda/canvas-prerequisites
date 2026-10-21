@@ -1,3 +1,6 @@
+# Namespace where Postgres is deployed
+namespace: keycloak
+
 # Secret name for Postgres credentials (should match the Keycloak secret name)
 # The credentials secret is always named {{ .Release.Name }}-credentials
 image:

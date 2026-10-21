@@ -25,10 +25,14 @@ This repository provides installation of prerequisites for the TM Forum ODA Canv
 ## Automation with Taskfile
 
 Automation tasks are managed using `Taskfile.yaml`. Key tasks include:
+- `install-all`: Install all prerequisites (Istio + Keycloak) with a single command
+- `add-istio-repo`: Add the Istio Helm repository
+- `install-istio`: Install Istio base, istiod (to `istio-system`), and gateway (to `istio-ingress`)
+- `install-prerequisites-chart`: Install Keycloak and Postgres
 - `test`: Run BDD tests (`cd tests && npm install && npm test`)
 - `lint`: Lint YAML files (`yamllint charts/ identity/`)
 
-> Note: Helm installation and cluster setup are not automated in the Taskfile. Please follow the manual steps in the Usage section.
+> Tip: Run `task install-all` for a complete one-command installation of all prerequisites.
 
 ## Testing
 
@@ -44,22 +48,50 @@ Automation tasks are managed using `Taskfile.yaml`. Key tasks include:
 ## Usage
 
 1. Clone this repo
-2. Install Istio:
+2. Review and customise values in `charts/values.yaml` as needed. For example:
+   - To deploy Keycloak to a custom namespace (default is `keycloak`):
+     ```yaml
+     keycloak:
+       namespace: my-custom-namespace
+       global:
+         keycloakNamespace: my-custom-namespace  # Must match keycloak.namespace for Postgres subchart
+     ```
+   - Or override via command line (note: both values must be set for Postgres to use the custom namespace):
+     ```sh
+     helm install prerequisites ./charts \
+       --set keycloak.namespace=my-custom-namespace \
+       --set keycloak.global.keycloakNamespace=my-custom-namespace
+     ```
+3. Install all prerequisites with a single command:
    ```sh
-   helm repo add istio https://istio-release.storage.googleapis.com/charts
+   task install-all
+   ```
+   This will:
+   - Add the Istio Helm repository
+   - Install Istio base and istiod to `istio-system` namespace
+   - Install Istio gateway to `istio-ingress` namespace
+   - Install Keycloak and Postgres to `keycloak` namespace (or custom namespace)
+   
+   Or, if you prefer to run commands manually:
+   ```sh
+   helm repo add istio https://blob.istio.io/istio-release/charts
    helm repo update
    kubectl create namespace istio-system
    helm install istio-base istio/base -n istio-system --wait
    helm install istiod istio/istiod -n istio-system --wait
-   ```
-3. Review and customise values in `charts/values.yaml` as needed.
-4. Deploy the chart-of-charts:
-   ```sh
+   helm install istio-gateway istio/gateway -n istio-ingress --create-namespace --wait
+   helm dependency update ./charts
    helm install prerequisites ./charts
    ```
-5. Configure dependent charts as needed
+   
+4. Verify the installation:
+   ```sh
+   kubectl get pods -n istio-system     # Check Istio base and istiod
+   kubectl get pods -n istio-ingress    # Check Istio gateway
+   kubectl get pods -n keycloak         # Check Keycloak and Postgres
+   ```
 
-> **Note:** This repository includes a `Taskfile.yaml` with example automation steps for installing prerequisites.
+> **Note:** Istio base and istiod are installed to `istio-system` namespace. Istio gateway is installed to `istio-ingress` namespace. Canvas prerequisites (Keycloak) are installed via the Helm chart-of-charts to the `keycloak` namespace.
 
 ## Configuration Values
 
@@ -67,39 +99,35 @@ The following table lists the main values exposed for customisation in the chart
 
 | Key                          | Default Value | Source                | Type    | Purpose                                      |
 |------------------------------|--------------|-----------------------|---------|----------------------------------------------|
+| `namespaces`                 | `[keycloak]` | chart-of-charts       | list    | Kubernetes namespaces to create for Canvas prerequisites |
 | `keycloak.enabled`           | `true`       | chart-of-charts       | boolean | Enable/disable Keycloak deployment           |
+| `keycloak.namespace`         | `keycloak`   | Keycloak sub-chart    | string  | Kubernetes namespace for Keycloak and Postgres |
 | `keycloak.username`          | `""`         | Keycloak sub-chart    | string  | Keycloak admin username (uses chart default) |
 | `keycloak.password`          | `""`         | Keycloak sub-chart    | string  | Keycloak admin password (uses chart default) |
 | `keycloak.postgres.username` | `""`         | Keycloak sub-chart    | string  | Postgres DB username for Keycloak (default)  |
 | `keycloak.postgres.password` | `""`         | Keycloak sub-chart    | string  | Postgres DB password for Keycloak (default)  |
 
+**Namespace Management:**
+- **Canvas Prerequisites Namespaces**: Defined in `namespaces` list (e.g., `keycloak`). These are created automatically by the Helm chart-of-charts when you run `helm install prerequisites ./charts`.
+- **Istio Infrastructure Namespaces**: Created by Taskfile tasks:
+  - `istio-system`: Created by `task install-istio` (base, istiod components)
+  - `istio-ingress`: Created by `task install-istio` (gateway component)
+- To add new prerequisite namespaces (e.g., observability, security), add them to the `namespaces` list in `charts/values.yaml`.
+
 ## Agents
 
-This repository uses specialized agents to assist with specific tasks. Each agent is designed to handle a particular aspect of the project, ensuring clarity and maintainability.
+This repository uses a specialized agent to assist with documentation maintenance and accuracy.
 
-### Available Agents
+### Available Agent
 
 - **Documentation Maintenance Agent**:
   - Location: `.github/agents/documentation.md`
   - Purpose: Maintains and improves documentation files (`.md` and `.puml`).
   - Responsibilities:
-    - Updates markdown files such as `README.md` and `CONTRIBUTING.md`.
-    - Keeps PlantUML diagrams up-to-date.
-    - Analyzes the codebase to ensure documentation reflects the current state of the project.
-- **Taskfile Maintenance Agent**:
-  - Location: `.github/agents/taskfile.md`
-  - Purpose: Creates and maintains `Taskfile.yaml` for automation.
-  - Responsibilities:
-    - Adds or updates tasks for testing, linting, and other automation.
-    - Ensures tasks are clear, functional, and documented.
-
-### Adding New Agents
-
-To add a new agent, create a markdown file in the `.github/agents/` directory. The file should include:
-- The agent's purpose.
-- Key responsibilities.
-- Guidelines for operation.
-- Examples of tasks the agent can perform.
+    - Keeps README.md, copilot-instructions.md, and other docs synchronized with Taskfile.yaml and chart configuration
+    - Ensures deployment instructions, examples, and namespace references are accurate
+    - Analyzes code to verify documentation reflects current implementation
+    - Updates configuration tables and PlantUML diagrams
 
 ## Contributing
 

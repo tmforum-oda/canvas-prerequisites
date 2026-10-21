@@ -1,14 +1,14 @@
 {{- if .Values.keycloak.enabled }}
-Keycloak has been deployed as a prerequisite.
+Keycloak has been deployed as a prerequisite in namespace "{{ .Values.keycloak.namespace }}".
 
 To access the Keycloak UI, get the service URL:
 
-  kubectl get svc {{ .Release.Name }}-keycloak
+  kubectl get svc {{ .Release.Name }}-keycloak -n {{ .Values.keycloak.namespace }}
 
 Default admin credentials:
   Username: {{ .Values.keycloak.username | default "admin" }}
   Password: Retrieve with:
-    kubectl get secret keycloak-credentials -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
+    kubectl get secret {{ .Release.Name }}-keycloak-credentials -n {{ .Values.keycloak.namespace }} -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
 
 If you set a custom admin username or password in your values, use those instead.
 {{- end }}

@@ -15,6 +15,7 @@ Customize values in `values.yaml` as needed or override with `--set`.
 
 | Parameter                        | Purpose                                         | Default                        |
 |-----------------------------------|-------------------------------------------------|--------------------------------|
+| `namespace`                       | Kubernetes namespace for Keycloak and Postgres  | `keycloak`                     |
 | `keycloak.image.repository`       | Keycloak image repository                       | `quay.io/keycloak/keycloak`    |
 | `keycloak.image.tag`              | Keycloak image tag/version                      | `26.4.2`                       |
 | `keycloak.replicas`               | Number of Keycloak pods                         | `1`                            |
@@ -42,6 +43,69 @@ Customize values in `values.yaml` as needed or override with `--set`.
 | `postgres.database`               | Postgres database name                          | `keycloak`                     |
 | `postgres.service.port`           | Postgres service port                           | `5432`                         |
 
+## Namespace Configuration
+
+By default, Keycloak and Postgres are deployed to the `keycloak` namespace. This namespace is created automatically by Helm as part of the chart deployment.
+
+### Using a Custom Namespace
+
+To deploy Keycloak to a different namespace, override the `namespace` value:
+
+```sh
+helm install my-keycloak ./keycloak --set namespace=my-custom-ns
+```
+
+Or configure it in your values file:
+
+```yaml
+namespace: my-custom-ns
+```
+
+**Note:** If you're using this chart as a dependency in a parent chart (chart-of-charts), you need to also update the `global.keycloakNamespace` value to ensure the Postgres subchart uses the same namespace:
+
+```yaml
+namespace: my-custom-ns
+global:
+  keycloakNamespace: my-custom-ns
+```
+
+### Accessing Keycloak Resources by Namespace
+
+After installation, verify the resources are in the correct namespace:
+
+```sh
+# Check StatefulSet
+kubectl get statefulset -n keycloak
+
+# Check Services
+kubectl get svc -n keycloak
+
+# Check Secrets
+kubectl get secret -n keycloak
+```
+
+### Cross-Namespace Access
+
+If other services in your cluster (e.g., API Gateway, other Canvas components) need to access Keycloak from a different namespace, use the Kubernetes fully qualified domain name (FQDN):
+
+```
+http://keycloak.keycloak.svc.cluster.local:8080
+```
+
+For a custom namespace:
+
+```
+http://keycloak.<namespace>.svc.cluster.local:8080
+```
+
+**Example:** If Keycloak is in namespace `identity-services` and another service in `api-gateway` needs to call it:
+
+```
+http://keycloak.identity-services.svc.cluster.local:8080
+```
+
+This FQDN format is standard Kubernetes service discovery and works across all namespaces without additional networking configuration, assuming no NetworkPolicies or security rules restrict traffic.
+
 ## Password Management
 
 - **Admin and database passwords** are stored in a Kubernetes Secret named `keycloak-credentials`.
@@ -57,16 +121,22 @@ helm install my-keycloak ./keycloak-helm --set keycloak.adminPassword=yourStrong
 
 ### Retrieving Passwords
 
-To get the Keycloak admin password:
+To get the Keycloak admin password (default namespace `keycloak`):
 
 ```sh
-kubectl get secret keycloak-credentials -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
+kubectl get secret keycloak-credentials -n keycloak -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
+```
+
+For a custom namespace, replace `keycloak` with your namespace name:
+
+```sh
+kubectl get secret keycloak-credentials -n <your-namespace> -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
 ```
 
 To get the Postgres password:
 
 ```sh
-kubectl get secret keycloak-credentials -o jsonpath='{.data.postgres-password}' | base64 --decode
+kubectl get secret keycloak-credentials -n keycloak -o jsonpath='{.data.postgres-password}' | base64 --decode
 ```
 
 ## Default Admin Credentials
@@ -89,8 +159,15 @@ The Keycloak admin password and Postgres password Secret is protected with the H
 After the first install, the randomly generated passwords are embedded in the Secret. **Store them securely** before performing upgrades:
 
 ```sh
-kubectl get secret <release-name>-credentials -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
-kubectl get secret <release-name>-credentials -o jsonpath='{.data.postgres-password}' | base64 --decode
+kubectl get secret <release-name>-credentials -n keycloak -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
+kubectl get secret <release-name>-credentials -n keycloak -o jsonpath='{.data.postgres-password}' | base64 --decode
+```
+
+For a custom namespace:
+
+```sh
+kubectl get secret <release-name>-credentials -n <your-namespace> -o jsonpath='{.data.keycloak-admin-password}' | base64 --decode
+kubectl get secret <release-name>-credentials -n <your-namespace> -o jsonpath='{.data.postgres-password}' | base64 --decode
 ```
 
 It is recommended to save these values immediately after the first installation.
@@ -138,12 +215,19 @@ If you need to regenerate the Secret from Helm (e.g., to reset to a random passw
 
 ## Accessing the Keycloak UI
 
-Get the service URL:
+Get the service URL in the default namespace:
 
 ```sh
-kubectl get svc <release-name>-keycloak
+kubectl get svc <release-name>-keycloak -n keycloak
 ```
-Replace `<release-name>` with your Helm release name.
+
+For a custom namespace:
+
+```sh
+kubectl get svc <release-name>-keycloak -n <your-namespace>
+```
+
+Replace `<release-name>` with your Helm release name and `<your-namespace>` with the namespace where you deployed Keycloak.
 
 ## Chart Structure
 

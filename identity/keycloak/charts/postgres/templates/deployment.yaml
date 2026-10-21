@@ -1,6 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: {{ .Values.global.keycloakNamespace | default .Values.namespace | default "keycloak" }}
   name: {{ .Release.Name }}-{{ .Chart.Name }}
   labels:
     app: {{ .Release.Name }}-{{ .Chart.Name }}

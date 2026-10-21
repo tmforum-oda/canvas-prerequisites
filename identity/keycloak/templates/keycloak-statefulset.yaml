@@ -1,6 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  namespace: {{ .Values.namespace }}
   name: {{ include "keycloak.fullname" . }}
   labels:
     {{- include "keycloak.labels" . | nindent 4 }}

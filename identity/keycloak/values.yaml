@@ -1,6 +1,12 @@
-# This value is set by the parent chart to ensure the correct secret name is used by the Postgres subchart
+# Namespace where Keycloak and its dependencies are deployed
+namespace: keycloak
+
+# Global values shared with subcharts (e.g., Postgres)
 global:
   keycloakSecretName: ""
+  keycloakNamespace: keycloak  # Shared namespace value for subcharts
+
+# This value is set by the parent chart to ensure the correct secret name is used by the Postgres subchart
 # Keycloak configuration
 keycloak:
   image:
@@ -35,6 +41,7 @@ keycloak:
       repository: quay.io/adorsys/keycloak-config-cli
       tag: 6.5.1-26
 postgres:
+  namespace: keycloak                           # Namespace for Postgres (same as Keycloak)
   image:
     repository: docker.io/postgres
     tag: "18"

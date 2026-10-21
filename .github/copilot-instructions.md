@@ -53,41 +53,85 @@ The ODA Canvas implements a modular architecture with independent operators:
 ### Deploying the Prerequisites
 
 1. Clone this repository.
-2. Install Istio:
+2. Review and customize `charts/values.yaml` as needed for Keycloak configuration.
+3. Deploy all prerequisites with a single command:
    ```sh
-   helm repo add istio https://istio-release.storage.googleapis.com/charts
-   helm repo update
-   helm install istio-base istio/base
-   helm install istiod istio/istiod
+   task install-all
    ```
-   Refer to the Istio documentation for further configuration.
-3. Customize `charts/values.yaml` as needed.
-4. Deploy the chart-of-charts:
+   This will:
+   - Add the Istio Helm repository (`https://blob.istio.io/istio-release/charts`)
+   - Install Istio base and istiod to `istio-system` namespace
+   - Install Istio gateway to `istio-ingress` namespace  
+   - Install Keycloak and Postgres via the prerequisites Helm chart-of-charts
+   
+   Alternatively, run individual tasks:
    ```sh
-   helm install prerequisites ./charts
+   task add-istio-repo      # Add Istio Helm repository
+   task install-istio       # Install all Istio components
+   task install-prerequisites-chart  # Install Keycloak and Postgres
    ```
 
 ### Using Taskfile for Automation
 
-- The `Taskfile.yaml` includes predefined automation steps. For example, to install prerequisites, run:
-  ```sh
-  task install
-  ```
+- The `Taskfile.yaml` includes predefined automation steps for installation and testing. Key tasks include:
+  - `task install-all`: Install all prerequisites (Istio + Keycloak) with a single command
+  - `task add-istio-repo`: Add the Istio Helm repository
+  - `task install-istio`: Install Istio base, istiod, and gateway
+  - `task install-prerequisites-chart`: Install Keycloak and Postgres
+  - `task lint`: Lint all Helm charts for syntax errors
+  - `task test`: Run BDD tests
 
 ## Testing and Debugging
 
 - Tests are located in the `tests/` directory and use BDD with Cucumber.
-- To run tests, ensure Node.js is installed and execute:
+- To run tests, use the Taskfile task:
   ```sh
-  npm install
-  npm test
+  task test
   ```
+- Or run manually: ensure Node.js is installed, then:
+  ```sh
+  cd tests && npm install && npm test
+  ```
+- See `tests/README.md` for setup and manual test execution instructions.
 
 ## Integration Points
 
-- **Istio**: Provides service mesh capabilities. Ensure it is installed and configured before deploying the chart-of-charts.
-- **Keycloak**: A dependent chart for identity management. Customize its `values.yaml` in `identity/keycloak/` for specific configurations.
+- **Istio**: Provides service mesh capabilities. Installed via Taskfile tasks:
+  - Istio base and istiod are installed to `istio-system` namespace
+  - Istio gateway is installed to `istio-ingress` namespace
+  - Use the standard Istio repository: `https://blob.istio.io/istio-release/charts`
+- **Keycloak**: A dependent chart for identity management. Deployed to the `keycloak` namespace (or custom namespace if configured). Customize its `values.yaml` in `identity/keycloak/` for specific configurations.
+- **Service Mesh**: Istio provides service mesh capabilities. Refer to the Istio documentation for further configuration beyond the base and istiod installation.
 
-## Configuration Values
+## Namespace Management
 
-Refer to the `charts/values.yaml` file for global configurations. For sub-chart-specific values, see the `values.yaml` in the respective directories (e.g., `identity/keycloak/values.yaml`).
+The canvas-prerequisites uses a centralized namespace management approach:
+
+### Canvas Prerequisites Namespaces
+Defined in `charts/values.yaml` under the `namespaces` list. These are created automatically by Helm as part of the chart-of-charts deployment:
+```yaml
+namespaces:
+  - keycloak
+```
+
+The Helm template `charts/templates/namespaces.yaml` uses a `range` loop to create a Namespace resource for each entry in this list. This provides:
+- **Single source of truth**: Add new namespaces only to the values list
+- **Scalability**: Easily add observability, security, or other prerequisite namespaces
+- **Automatic ordering**: Namespaces created before other resources (Helm resource ordering)
+
+### Istio Infrastructure Namespaces
+Created by Taskfile tasks during `task install-istio`:
+- `istio-system`: Istio base and istiod (control plane)
+- `istio-ingress`: Istio gateway (ingress component)
+
+These are created separately to maintain clean separation between infrastructure (Istio) managed via Task and application prerequisites (Keycloak) managed via Helm.
+
+### Adding New Prerequisite Namespaces
+To add a new prerequisite namespace (e.g., observability):
+1. Edit `charts/values.yaml` and add to the `namespaces` list:
+   ```yaml
+   namespaces:
+     - keycloak
+     - observability
+   ```
+2. The Helm template automatically creates the namespace when you run `helm install prerequisites ./charts`
