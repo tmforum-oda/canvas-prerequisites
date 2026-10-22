@@ -1,0 +1,15 @@
+# Kubernetes namespaces to create for Canvas prerequisites
+namespaces:
+  - keycloak
+
+# Keycloak identity management
+keycloak:
+  enabled: true
+  namespace: keycloak  # Namespace where Keycloak and Postgres are deployed
+  global:
+    keycloakNamespace: keycloak  # Must match keycloak.namespace for Postgres subchart
+  username: ""
+  password: ""
+  postgres:
+    username: ""
+    password: ""

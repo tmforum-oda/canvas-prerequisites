@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgres
+description: A Helm subchart for Postgres used by Keycloak
+type: application
+version: 0.2.0
+appVersion: "18"

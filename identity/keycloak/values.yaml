@@ -1,0 +1,54 @@
+# Namespace where Keycloak and its dependencies are deployed
+namespace: keycloak
+
+# Global values shared with subcharts (e.g., Postgres)
+global:
+  keycloakSecretName: ""
+  keycloakNamespace: keycloak  # Shared namespace value for subcharts
+
+# This value is set by the parent chart to ensure the correct secret name is used by the Postgres subchart
+# Keycloak configuration
+keycloak:
+  image:
+    repository: quay.io/keycloak/keycloak  # Keycloak image repo
+    tag: 26.8                              # Keycloak image tag
+  replicas: 1                              # Number of Keycloak pods
+  resources:                               # Pod resource requests/limits
+    requests:
+      cpu: 500m
+      memory: 1700Mi
+    limits:
+      cpu: 2000m
+      memory: 2000Mi
+  service:
+    type: LoadBalancer                     # Service type
+    port: 8080                             # Service port
+    healthPort: 9000                       # Health endpoint port
+  adminUser: "admin"                            # Admin username (default)
+  adminPassword: ""                             # Admin password (set blank for generation)
+  hostnameStrict: false                    # Hostname strict mode
+  healthEnabled: true                      # Enable health checks
+  cache: ispn                              # Cache provider
+  proxyHeaders: xforwarded                 # Proxy header mode
+  httpEnabled: true                        # Enable HTTP
+  importJob:
+    enabled: false
+  feature:
+    tokenExchangeDelegation: enabled          # Enable the token exchange delegation feature
+    parameterizedScopes: enabled              # Enable the parameterized scopes feature
+  configCli:
+    image:
+      repository: quay.io/adorsys/keycloak-config-cli
+      tag: 6.5.1-26
+postgres:
+  namespace: keycloak                           # Namespace for Postgres (same as Keycloak)
+  image:
+    repository: docker.io/postgres
+    tag: "18"
+  user: "keycloak"                              # DB username (default)
+  password: ""                                  # DB password (set blank for generation)
+  database: keycloak
+  service:
+    port: 5432
+  # The credentials secret is always named {{ .Release.Name }}-credentials
+  # The secretName is set automatically by the parent chart. If you override release/chart names, ensure this matches.

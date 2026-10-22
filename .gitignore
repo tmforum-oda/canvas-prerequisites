@@ -1,0 +1,26 @@
+# Helm chart build artifacts
+charts/**/charts/
+charts/**/tmp/
+charts/**/Chart.lock
+
+# Kubernetes config
+*.kubeconfig
+
+# Node modules (if any JS tooling)
+node_modules/
+
+# Python virtualenvs
+venv/
+.env
+
+# Editor files
+*.swp
+*.swo
+*.bak
+.DS_Store
+
+# Logs
+*.log
+
+# OS generated files
+Thumbs.db

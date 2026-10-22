@@ -1,0 +1,63 @@
+version: '3'
+
+vars:
+  KEYCLOAK_NAMESPACE: keycloak  # Default namespace for Keycloak deployment
+
+tasks:
+  test:
+    desc: Run BDD tests
+    cmds:
+      - cd tests
+      - npm install
+      - npm test
+
+  lint:
+    desc: Lint all Helm charts for syntax errors
+    cmds:
+      - helm lint charts/ identity/keycloak/
+      - echo "All charts passed linting"
+
+  add-istio-repo:
+    desc: Add the Istio Helm repository
+    cmds:
+      - helm repo add istio https://blob.istio.io/istio-release/charts
+      - helm repo update
+
+  install-istio:
+    desc: Install Istio base, control plane, and gateway
+    deps: [add-istio-repo]
+    cmds:
+      - kubectl create namespace istio-system || true
+      - helm install istio-base istio/base -n istio-system --wait
+      - helm install istiod istio/istiod -n istio-system --wait
+      - helm install istio-gateway istio/gateway -n istio-ingress --create-namespace --wait
+
+  install-prerequisites-chart:
+    desc: Install the canvas-prerequisites chart-of-charts (Keycloak)
+    cmds:
+      - helm dependency update charts/
+      - helm install prerequisites charts/ --namespace {{.KEYCLOAK_NAMESPACE}} --create-namespace
+
+  install-prerequisites-custom-namespace:
+    desc: Install the canvas-prerequisites chart-of-charts with custom namespace
+    cmds:
+      - helm dependency update charts/
+      - helm install prerequisites charts/ --set keycloak.namespace={{.KEYCLOAK_NAMESPACE}} --set keycloak.global.keycloakNamespace={{.KEYCLOAK_NAMESPACE}} --namespace {{.KEYCLOAK_NAMESPACE}} --create-namespace
+
+  install-microk8s:
+    desc: Install microk8s and enable required modules
+    cmds:
+      - sudo snap install microk8s --classic
+      - sudo microk8s enable hostpath-storage
+      - sudo microk8s enable dns
+      - sudo microk8s enable metallb
+
+  install-all:
+    desc: Install all prerequisites for ODA Canvas (Istio + Keycloak)
+    cmds:
+      - task: lint
+      - task: install-istio
+      - task: install-prerequisites-chart
+      - echo "All prerequisites installed."
+      - echo "Keycloak is running in namespace {{.KEYCLOAK_NAMESPACE}}"
+      - echo "Istio (base, istiod, gateway) is running in namespace istio-system"

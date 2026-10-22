@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.global.keycloakNamespace | default .Values.namespace | default "keycloak" }}
+  name: {{ .Release.Name }}-{{ .Chart.Name }}
+  labels:
+    app: {{ .Release.Name }}-{{ .Chart.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-{{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-{{ .Chart.Name }}
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-credentials
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-credentials
+                  key: postgres-password
+            - name: POSTGRES_DB
+              value: "{{ .Values.database }}"
+            - name: POSTGRES_LOG_STATEMENT
+              value: "all"
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.service.port }}
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+      volumes:
+        - name: postgres-data
+          emptyDir: {}
